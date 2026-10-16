@@ -1,0 +1,17 @@
+{
+  "name": "Claude Ride",
+  "short_name": "Claude Ride",
+  "description": "3D-скейтпарк: трюки на скейте и самокате, 105 уровней, скины.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#9fc8ee",
+  "theme_color": "#e2643c",
+  "lang": "ru",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

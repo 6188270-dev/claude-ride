@@ -2,7 +2,14 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#e2643c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="3D-скейтпарк: трюки на скейте и самокате, 105 уровней, скины. Играй на компьютере и телефоне.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Claude Ride</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,6 +132,22 @@ dd{margin:0;color:var(--ink)}
 #warp.on{opacity:1}
 #warp b{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,58px);color:var(--ink)}
 #warp span{font-size:18px;color:var(--ink)}
+.touch #help{display:none!important}
+.touch #speed{bottom:auto;top:calc(70px + env(safe-area-inset-top,0px))}
+@media (max-height:500px){.logo{font-size:40px}.lead{font-size:14px;margin:8px 0 2px}.panel{padding:16px}}
+#touch{position:fixed;inset:0;z-index:12;pointer-events:none;-webkit-touch-callout:none}
+#touch>*{pointer-events:auto;touch-action:none}
+#tcam{position:absolute;right:0;top:0;bottom:0;width:58%}
+#joy{position:absolute;left:calc(22px + env(safe-area-inset-left,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:150px;height:150px;border-radius:50%;background:rgba(241,235,224,.35);border:3px solid rgba(28,26,33,.75);box-sizing:border-box}
+#knob{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:var(--coral);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink)}
+#tbtns{position:absolute;right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,76px);gap:8px;direction:rtl}
+.tb{font-family:var(--display);font-size:12px;line-height:1.1;height:52px;padding:2px 4px;background:rgba(241,235,224,.9);color:var(--ink);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);direction:ltr;-webkit-user-select:none;user-select:none}
+.tb.hold{background:rgba(255,210,63,.92)}
+.tb.more{background:rgba(226,217,201,.92)}
+.tb.on{background:var(--coral);color:#fff;transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.tb.big{position:absolute;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:116px;height:116px;border-radius:50%;font-size:15px;background:rgba(226,100,60,.92);color:#fff}
+#rotate{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:14;background:var(--yellow);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-family:var(--display);font-size:14px;padding:6px 12px;text-align:center;max-width:calc(100% - 32px)}
+@media (max-height:420px){#joy{width:128px;height:128px}.tb{height:44px}#tbtns{grid-template-columns:repeat(3,70px);gap:6px}.tb.big{width:96px;height:96px}#tl .lvl,#tl .chip.sm{display:none}}
 @media (prefers-reduced-motion:reduce){.pop{animation:none}#warp{transition:none}}
 </style>
 </head>
@@ -149,6 +172,13 @@ dd{margin:0;color:var(--ink)}
   <div id="speed"><span id="spd">0</span><small>КМ/Ч</small></div>
 </div>
 
+<div id="touch" hidden>
+  <div id="tcam"></div>
+  <div id="joy"><div id="knob"></div></div>
+  <div id="tbtns"></div>
+  <button class="tb big" id="tjump" data-c="jump">ПРЫЖОК</button>
+</div>
+<div id="rotate" hidden>Поверни телефон горизонтально - так удобнее</div>
 <div id="talk" hidden><canvas id="tface" width="96" height="96"></canvas><div class="tb"><h3>Профессор Олли</h3><p id="ttext"></p><div class="tf"><span id="tpage"></span><button class="btn small primary" id="tnext">Дальше</button></div></div></div>
 <div id="warp"><b id="wtitle">Уровень 1</b><span id="wsub"></span></div>
 
@@ -179,6 +209,7 @@ dd{margin:0;color:var(--ink)}
       <button class="btn primary" id="b-play">Кататься</button>
       <button class="btn" id="b-shop">Магазин скинов</button>
       <button class="btn" id="b-fs">На весь экран</button>
+      <button class="btn" id="b-q">Графика</button>
     </div>
     <div class="cols">
       <div><div class="lbl">Управление</div><dl id="mctrl"></dl></div>
@@ -224,7 +255,7 @@ const wrapPI=a=>{a=(a+Math.PI)%TAU;if(a<0)a+=TAU;return a-Math.PI};
 const SK='clauderide.v1';
 const DEF_OWN={rider:['classic'],skate:['birch'],scooter:['steel']},DEF_EQ={rider:'classic',skate:'birch',scooter:'steel'};
 let save={coins:0,best:0,total:0,level:0,park:0,met:{},vehicle:'skate',owned:JSON.parse(JSON.stringify(DEF_OWN)),eq:Object.assign({},DEF_EQ),goals:{}};
-try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(s&&typeof s.coins==='number'){save.coins=s.coins;save.best=s.best||0;save.total=s.total||0;save.level=s.level||0;save.park=s.park||0;save.met=s.met||{};save.vehicle=s.vehicle||'skate';save.goals=s.goals||{};for(const k in DEF_OWN){save.owned[k]=Array.isArray(s.owned&&s.owned[k])?s.owned[k]:DEF_OWN[k].slice();save.eq[k]=(s.eq&&s.eq[k])||DEF_EQ[k]}}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem(SK)||'null');if(s&&typeof s.coins==='number'){save.coins=s.coins;save.best=s.best||0;save.quality=s.quality||null;save.total=s.total||0;save.level=s.level||0;save.park=s.park||0;save.met=s.met||{};save.vehicle=s.vehicle||'skate';save.goals=s.goals||{};for(const k in DEF_OWN){save.owned[k]=Array.isArray(s.owned&&s.owned[k])?s.owned[k]:DEF_OWN[k].slice();save.eq[k]=(s.eq&&s.eq[k])||DEF_EQ[k]}}}catch(e){}
 function persist(){try{localStorage.setItem(SK,JSON.stringify(save))}catch(e){}}
 let VEH=save.vehicle==='scooter'?'scooter':'skate';
 
@@ -996,7 +1027,10 @@ function updComboHUD(){
   $('combo').hidden=false;const it=combo.items;const shown=it.slice(-5).map(i=>i.name).join(' + ');$('cnames').textContent=(it.length>5?'… + ':'')+shown;
   const{total,mult}=comboTotals();$('cscore').textContent=`${total.toLocaleString('ru-RU')} × ${mult}`}
 function refreshCoins(){for(const id of['hcoins','mcoins','scoins'])$(id).textContent=save.coins.toLocaleString('ru-RU');$('hbest').textContent='Рекорд '+save.best.toLocaleString('ru-RU');refreshLevelHUD()}
-function ctrlHTML(){const sk=VEH==='skate';const rows=[
+function ctrlHTML(){const sk=VEH==='skate';
+  if(touchOn){const tr=[['Джойстик','вверх - разгон, вниз - тормоз, в стороны - поворот'],['В воздухе','джойстик в стороны - спин, вверх/вниз - бэкфлип/фронтфлип'],['Прыжок','держи - присед, отпусти - прыжок'],['Кнопки','меняются сами: на земле мэнуал, стант, дрифт; в воздухе флипы и грэбы; на перилах стили грайнда'],['Свайп','по правой части экрана - обзор'],['Перила','баланс - джойстиком влево/вправо']];
+    return tr.map(r=>`<dt><kbd>${r[0]}</kbd></dt><dd>${r[1]}</dd>`).join('')}
+  const rows=[
   ['W','разгон, на рампах - качка'],['S','тормоз'],['A D','поворот, в воздухе - спин'],['Мышь','обзор, колесо - дальше/ближе'],['Пробел','держи - присед, отпусти - прыжок'],
   ['↑ ↓','в воздухе: бэкфлип / фронтфлип'],['J',sk?'кикфлип':'тейлвип'],['K',sk?'хилфлип':'барспин'],['U',sk?'поп-шовит':'обратный тейлвип'],
   ['I',sk?'трэ-флип':'вип-барспин'],['O',sk?'импоссибл':'двойной тейлвип'],['N M B G',sk?'варил-флип, лазер-флип, хардфлип, бодиварил':'брифлип, тройной барспин, фронтфлип деки, бодиварил'],['L','держи: '+(sk?'грэб Инди':'супермен')],['C','держи: '+(sk?'грэб Мелон':'ноу-футер')],['J K U I O','на перилах: сменить стиль грайнда'],
@@ -1032,7 +1066,7 @@ function play(){state='play';show(null);$('hud').hidden=false;resetPlayer();camP
 function pauseGame(){if(state!=='play')return;state='pause';show('pause');for(const k in keys)keys[k]=false;unlockMouse()}
 function resume(){state='play';show(null)}
 function toMenu(){if(state==='warp')return;state='menu';show('menu');$('hud').hidden=true;combo=null;renderMenu();resetPlayer();unlockMouse()}
-function goFS(){const el=document.documentElement;try{const r=el.requestFullscreen?el.requestFullscreen():null;if(r&&r.catch)r.catch(()=>pop('Полный экран недоступен здесь. Нажми F11 в браузере'));else if(!r)pop('Полный экран недоступен здесь. Нажми F11 в браузере')}catch(e){pop('Полный экран недоступен здесь. Нажми F11 в браузере')}}
+function goFS(){const el=document.documentElement;try{const r=el.requestFullscreen?el.requestFullscreen():null;if(r&&r.then&&touchOn)r.then(()=>{try{const o=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape');if(o&&o.catch)o.catch(()=>{})}catch(e){}}).catch(()=>{});if(r&&r.catch)r.catch(()=>pop('Полный экран недоступен здесь. Нажми F11 в браузере'));else if(!r)pop('Полный экран недоступен здесь. Нажми F11 в браузере')}catch(e){pop('Полный экран недоступен здесь. Нажми F11 в браузере')}}
 function setVeh(v){VEH=v;save.vehicle=v;persist();rebuildModels();renderMenu()}
 $('v-skate').onclick=()=>setVeh('skate');$('v-scooter').onclick=()=>setVeh('scooter');
 $('b-play').onclick=play;$('b-shop').onclick=()=>{shopFrom='menu';state='shop';show('shop');renderShop()};$('b-fs').onclick=goFS;
@@ -1196,6 +1230,63 @@ function updateCamera(dt){
   camD.y=Math.max(camD.y,hAt(camD.x,camD.z)+1.1);
   camera.position.lerp(camD,1-Math.exp(-dt*(mouseIdle<.2?14:5.5)));camera.lookAt(camT)}
 
+/* ================= ТЕЛЕФОН: экранное управление ================= */
+// Включается только на сенсорных устройствах; на компьютере ничего не меняется.
+// Кнопки посылают те же события клавиатуры, что и настоящие клавиши, поэтому вся логика игры общая.
+const isTouch=(window.matchMedia&&matchMedia('(pointer: coarse)').matches)||(navigator.maxTouchPoints||0)>0&&!(window.matchMedia&&matchMedia('(pointer: fine)').matches);
+let touchOn=isTouch;
+function vk(code,down){window.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{code,bubbles:true,cancelable:true}))}
+const vHeld=new Set();
+function setVK(code,on){if(on&&!vHeld.has(code)){vHeld.add(code);vk(code,true)}else if(!on&&vHeld.has(code)){vHeld.delete(code);vk(code,false)}}
+const joy={id:null,cx:0,cy:0,x:0,y:0,R:56};
+const ptrCode=new Map();let airSet=0,lastCtx='';
+function joyStart(e){if(joy.id!==null)return;const r=$('joy').getBoundingClientRect();joy.id=e.pointerId;joy.cx=r.left+r.width/2;joy.cy=r.top+r.height/2;joyMove(e);e.preventDefault()}
+function joyMove(e){if(e.pointerId!==joy.id)return;let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy;const l=Math.hypot(dx,dy);if(l>joy.R){dx*=joy.R/l;dy*=joy.R/l}joy.x=dx/joy.R;joy.y=dy/joy.R;$('knob').style.transform=`translate(${dx}px,${dy}px)`}
+function joyEnd(e){if(e.pointerId!==joy.id)return;joy.id=null;joy.x=joy.y=0;$('knob').style.transform=''}
+let joyLatch=false,wasAir=false;
+function applyJoy(){const air=P.state==='air'||P.manual;const x=joy.x;
+  if(air&&!wasAir&&Math.abs(joy.y)>.3)joyLatch=true;wasAir=air;if(Math.abs(joy.y)<.3)joyLatch=false;const y=air&&joyLatch?0:joy.y;
+  setVK('KeyA',x<-.35);setVK('KeyD',x>.35);
+  setVK('KeyW',!air&&y<-.35);setVK('KeyS',!air&&y>.5);
+  setVK('ArrowUp',air&&y<-.45);setVK('ArrowDown',air&&y>.45)}
+function ctxButtons(){const sk=VEH==='skate';
+  if(P.state==='air'){const sets=[[['KeyJ',sk?'Кикфлип':'Тейлвип'],['KeyK',sk?'Хилфлип':'Барспин'],['KeyU',sk?'Шовит':'Реверс-вип']],[['KeyI',sk?'Трэ-флип':'Вип-бар'],['KeyO',sk?'Импоссибл':'2× вип'],['KeyN',sk?'Варил':'Брифлип']],[['KeyM',sk?'Лазер':'3× бар'],['KeyB',sk?'Хардфлип':'Флип деки'],['KeyG','Бодиварил']]];
+    return[...sets[airSet].map(([c,l])=>({c,l,t:'tap'})),{c:'KeyL',l:sk?'Грэб':'Супермен',t:'hold'},{c:'KeyC',l:sk?'Мелон':'Ноу-футер',t:'hold'},{c:'more',l:`Ещё ${airSet+1}/3`,t:'more'}]}
+  if(P.state==='grind')return Object.entries(GRINDS[VEH]).map(([c,l])=>({c,l,t:'tap'}));
+  if(P.state==='ground'){const b=[{c:'KeyQ',l:'Мэнуал',t:'hold'},{c:'ControlLeft',l:'Стант',t:'hold'},{c:'AltLeft',l:'Дрифт',t:'hold'}];
+    if(prof&&Math.hypot(prof.position.x-P.p.x,prof.position.z-P.p.z)<6)b.push({c:'KeyE',l:'Говорить',t:'tap'});b.push({c:'KeyR',l:'На старт',t:'tap'});return b}
+  return[]}
+function renderTouchBtns(){const box=$('tbtns');box.innerHTML='';for(const b of ctxButtons()){const el=document.createElement('button');el.className='tb'+(b.t==='hold'?' hold':'')+(b.t==='more'?' more':'');el.textContent=b.l;el.dataset.c=b.c;el.dataset.t=b.t;box.appendChild(el)}}
+function btnDown(e){const el=e.target.closest('.tb');if(!el)return;e.preventDefault();const c=el.dataset.c;
+  if(c==='jump'){ptrCode.set(e.pointerId,'Space');vk('Space',true);el.classList.add('on');return}
+  if(el.dataset.t==='more'){airSet=(airSet+1)%3;lastCtx='';return}
+  ptrCode.set(e.pointerId,c);vk(c,true);el.classList.add('on')}
+function btnUp(e){const c=ptrCode.get(e.pointerId);if(!c)return;ptrCode.delete(e.pointerId);vk(c,false);document.querySelectorAll('.tb.on').forEach(b=>{if(b.dataset.c===c||(c==='Space'&&b.dataset.c==='jump'))b.classList.remove('on')})}
+const cam={id:null,x:0,y:0};
+function camStart(e){if(cam.id!==null)return;cam.id=e.pointerId;cam.x=e.clientX;cam.y=e.clientY;e.preventDefault()}
+function camMove(e){if(e.pointerId!==cam.id)return;camYaw-=(e.clientX-cam.x)*.007;camPitch=clamp(camPitch+(e.clientY-cam.y)*.005,-.1,1.25);cam.x=e.clientX;cam.y=e.clientY;mouseIdle=0}
+function camEnd(e){if(e.pointerId===cam.id)cam.id=null}
+function releaseTouch(){for(const c of[...vHeld])setVK(c,false);for(const[id,c]of ptrCode)vk(c,false);ptrCode.clear();joy.id=null;joy.x=joy.y=0;$('knob').style.transform='';cam.id=null;document.querySelectorAll('.tb.on').forEach(b=>b.classList.remove('on'))}
+function touchTick(){const show=touchOn&&state==='play';if($('touch').hidden===show){$('touch').hidden=!show;if(!show)releaseTouch()}
+  $('rotate').hidden=!(show&&innerHeight>innerWidth);
+  if(!show)return;applyJoy();
+  if(P.state!=='air')airSet=0;
+  const near=prof&&Math.hypot(prof.position.x-P.p.x,prof.position.z-P.p.z)<6;const ctx=P.state+airSet+VEH+near;if(ctx!==lastCtx){lastCtx=ctx;renderTouchBtns()}}
+function enableTouch(){if(touchOn)return;touchOn=true;document.body.classList.add('touch');if(!save.quality){save.quality='mid';applyQuality()}renderMenu()}
+{const j=$('joy');j.addEventListener('pointerdown',joyStart);
+  window.addEventListener('pointermove',e=>{joyMove(e);camMove(e)});
+  const end=e=>{joyEnd(e);camEnd(e);btnUp(e)};window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);
+  $('tbtns').addEventListener('pointerdown',btnDown);$('tjump').addEventListener('pointerdown',btnDown);
+  $('tcam').addEventListener('pointerdown',camStart);
+  for(const el of[$('touch'),cv])el.addEventListener('contextmenu',e=>e.preventDefault());
+  window.addEventListener('touchstart',()=>enableTouch(),{passive:true,once:true});
+  if(touchOn)document.body.classList.add('touch')}
+/* качество графики */
+const QUAL={high:{n:'Высокая',pr:2},mid:{n:'Средняя',pr:1.25},low:{n:'Низкая',pr:.75}};
+function applyQuality(){const q=QUAL[save.quality]||QUAL[isTouch?'mid':'high'];renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,q.pr));resize();const b=$('b-q');if(b)b.textContent='Графика: '+q.n}
+$('b-q').onclick=()=>{const order=['high','mid','low'];const cur=save.quality||(isTouch?'mid':'high');save.quality=order[(order.indexOf(cur)+1)%3];persist();applyQuality()};
+applyQuality();
+
 /* ================= LOOP ================= */
 let last=performance.now();
 function update(dt){
@@ -1205,6 +1296,7 @@ function update(dt){
   }
 }
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(touchOn)touchTick();
   if(state==='play'){update(dt);profCheck()}
   updateVisual(dt,now/1000);animProf(now/1000);updateCamera(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}
 
@@ -1215,5 +1307,6 @@ requestAnimationFrame(loop);
 </script>
 
 
+<script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
 </body>
 </html>
